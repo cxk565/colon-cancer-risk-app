@@ -6,28 +6,28 @@ import shap
 import matplotlib.pyplot as plt
 import os
 
-# 强制后台绘图，防止网页端多线程冲突
+# Force background plotting to prevent multi-threading conflicts in web apps
 import matplotlib
 matplotlib.use('Agg')
 
 # ==========================================
-# 0. 网页全局配置 & CSS 美化
+# 0. Page Configuration & CSS Styling
 # ==========================================
 st.set_page_config(
-    page_title="结肠癌术后低蛋白血症预警系统",
+    page_title="Hypoalbuminemia Risk Predictor",
     page_icon="⚕️",
     layout="wide",
     initial_sidebar_state="expanded" 
 )
 
-# 💉 注入自定义高级 CSS
+# 💉 Custom Advanced CSS
 st.markdown("""
     <style>
     html, body, [class*="css"]  {
-        font-family: 'Times New Roman', 'Microsoft YaHei', sans-serif;
+        font-family: 'Times New Roman', sans-serif;
     }
     
-    /* 核心主按钮样式重写 */
+    /* Core button styling */
     div.stButton > button:first-child {
         background-color: #2E86C1;
         color: white;
@@ -47,27 +47,27 @@ st.markdown("""
         transform: translateY(-2px);
     }
     
-    /* 侧边栏背景 */
+    /* Sidebar styling */
     [data-testid="stSidebar"] {
         background-color: #F8F9F9;
         border-right: 1px solid #E5E7E9;
     }
     
-    /* 结果数值颜色强化 */
+    /* Metric value color reinforcement */
     div[data-testid="stMetricValue"] {
         font-size: 2.8rem;
         color: #C0392B; 
         font-weight: 900;
     }
     
-    /* 输入框视觉强化 */
+    /* Input field styling */
     input[type="number"] {
         font-weight: bold;
         color: #154360;
         background-color: #F4F6F7;
     }
     
-    /* 隐藏不必要的原生组件 */
+    /* Hide native menu and deploy button */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
@@ -75,26 +75,26 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 1. 顶部抬头设计
+# 1. Header Design
 # ==========================================
 col_logo, col_title = st.columns([1, 8])
 with col_logo:
     st.image("https://cdn-icons-png.flaticon.com/512/3004/3004458.png", width=80) 
 with col_title:
-    st.title("结肠癌患者术后低蛋白血症风险智能预警平台")
-    st.markdown("**(Intelligent Warning Platform for Postoperative Hypoalbuminemia Risk in Colon Cancer)**")
+    st.title("Intelligent Warning Platform for Postoperative Hypoalbuminemia Risk in Colon Cancer")
+    st.markdown("**(Clinical Decision Support System based on XGBoost)**")
 
 st.markdown("""
 <div style='background-color: #EBF5FB; padding: 15px; border-radius: 10px; border-left: 5px solid #2980B9; margin-bottom: 25px;'>
     <span style='color: #154360; font-size: 15px;'>
-    <b>📊 系统简介：</b>本平台搭载 XGBoost 机器学习算法。通过整合患者术前及术中关键临床指标，<b>实时预警术后低蛋白血症</b>的发生风险。系统集成了 <b>SHAP 个体化解析技术</b>，旨在为临床医生提供直观、可解释的辅助决策支持。
+    <b>📊 System Introduction:</b> Powered by the advanced XGBoost machine learning algorithm, this platform integrates key preoperative and intraoperative clinical indicators to <b>dynamically predict the risk of postoperative hypoalbuminemia</b> in colon cancer patients. It features <b>SHAP (SHapley Additive exPlanations)</b> for individualized interpretation, providing clinicians with intuitive and explainable decision support.
     </span>
 </div>
 """, unsafe_allow_html=True)
 
 
 # ==========================================
-# 2. 智能加载引擎 (直接读取同级目录)
+# 2. Model Loading Engine
 # ==========================================
 @st.cache_resource 
 def load_model():
@@ -102,7 +102,7 @@ def load_model():
     model_path = os.path.join(base_dir, "xgb_model.pkl")
     
     if not os.path.exists(model_path):
-        raise FileNotFoundError(f"找不到模型文件: {model_path}")
+        raise FileNotFoundError(f"Model file not found: {model_path}")
         
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
@@ -111,12 +111,12 @@ def load_model():
 try:
     model = load_model()
 except Exception as e:
-    st.error("🚨 模型文件加载失败，请检查文件是否已上传至 GitHub 根目录。")
+    st.error("🚨 Model loading failed. Please ensure 'xgb_model.pkl' is uploaded to the root directory.")
     st.stop()
 
 
 # ==========================================
-# 3. 双向状态同步 (Two-way Binding)
+# 3. Two-way Binding for Inputs
 # ==========================================
 default_values = {
     'ChE': 6664.0, 'Age': 816.0, 'PA': 197.5, 
@@ -135,56 +135,56 @@ def sync_inputs(src_key, dest_key):
 
 
 # ==========================================
-# 4. 侧边栏：快速滑动控制
+# 4. Sidebar: Quick Sliders
 # ==========================================
-st.sidebar.markdown("### 🖥️ 系统运行状态")
-st.sidebar.success("🟢 核心引擎: XGBoost 已就绪")
+st.sidebar.markdown("### 🖥️ System Status")
+st.sidebar.success("🟢 Core Engine: XGBoost Ready")
 st.sidebar.markdown("---")
 
-st.sidebar.markdown("### 🎛️ 临床指标快速调节")
+st.sidebar.markdown("### 🎛️ Rapid Parameter Adjustment")
 
-with st.sidebar.expander("👤 人口学与肝肾功能", expanded=True):
-    st.slider("年龄 (Age, 月龄)", 200.0, 1300.0, step=1.0, key="Age_slider", on_change=sync_inputs, args=("Age_slider", "Age_num"))
-    st.slider("肌酐 (Crea) umol/L", 10.0, 1200.0, step=0.1, key="Crea_slider", on_change=sync_inputs, args=("Crea_slider", "Crea_num"))
-    st.slider("前白蛋白 (PA) mg/L", 10.0, 800.0, step=1.0, key="PA_slider", on_change=sync_inputs, args=("PA_slider", "PA_num"))
-    st.slider("球蛋白 (GLO) g/L", 10.0, 120.0, step=0.1, key="GLO_slider", on_change=sync_inputs, args=("GLO_slider", "GLO_num"))
+with st.sidebar.expander("👤 Demographics & Hepatorenal", expanded=True):
+    st.slider("Age (Months)", 200.0, 1300.0, step=1.0, key="Age_slider", on_change=sync_inputs, args=("Age_slider", "Age_num"))
+    st.slider("Creatinine (Crea) μmol/L", 10.0, 1200.0, step=0.1, key="Crea_slider", on_change=sync_inputs, args=("Crea_slider", "Crea_num"))
+    st.slider("Prealbumin (PA) mg/L", 10.0, 800.0, step=1.0, key="PA_slider", on_change=sync_inputs, args=("PA_slider", "PA_num"))
+    st.slider("Globulin (GLO) g/L", 10.0, 120.0, step=0.1, key="GLO_slider", on_change=sync_inputs, args=("GLO_slider", "GLO_num"))
 
-with st.sidebar.expander("🩸 血液学指标", expanded=True):
-    st.slider("淋巴细胞百分比 (Lymph%)", 0.0, 100.0, step=0.1, key="Lymph_pct_slider", on_change=sync_inputs, args=("Lymph_pct_slider", "Lymph_pct_num"))
-    st.slider("淋巴细胞绝对值 (Lymph count)", 0.0, 50.0, step=0.01, key="Lymph_count_slider", on_change=sync_inputs, args=("Lymph_count_slider", "Lymph_count_num"))
-    st.slider("纤维蛋白降解产物 (FDP) mg/L", 0.0, 300.0, step=0.01, key="FDP_slider", on_change=sync_inputs, args=("FDP_slider", "FDP_num"))
+with st.sidebar.expander("🩸 Hematological Indices", expanded=True):
+    st.slider("Lymphocyte Percentage (Lymph%)", 0.0, 100.0, step=0.1, key="Lymph_pct_slider", on_change=sync_inputs, args=("Lymph_pct_slider", "Lymph_pct_num"))
+    st.slider("Lymphocyte Count (×10^9/L)", 0.0, 50.0, step=0.01, key="Lymph_count_slider", on_change=sync_inputs, args=("Lymph_count_slider", "Lymph_count_num"))
+    st.slider("Fibrin Degradation Products (FDP) mg/L", 0.0, 300.0, step=0.01, key="FDP_slider", on_change=sync_inputs, args=("FDP_slider", "FDP_num"))
     
-with st.sidebar.expander("🔬 特种酶与标志物", expanded=True):
-    st.slider("胆碱酯酶 (ChE) U/L", 100.0, 25000.0, step=10.0, key="ChE_slider", on_change=sync_inputs, args=("ChE_slider", "ChE_num"))
-    st.slider("癌胚抗原 (CEA) ng/mL", 0.0, 5000.0, step=0.1, key="CEA_slider", on_change=sync_inputs, args=("CEA_slider", "CEA_num"))
+with st.sidebar.expander("🔬 Specific Enzymes & Markers", expanded=True):
+    st.slider("Cholinesterase (ChE) U/L", 100.0, 25000.0, step=10.0, key="ChE_slider", on_change=sync_inputs, args=("ChE_slider", "ChE_num"))
+    st.slider("Carcinoembryonic Antigen (CEA) ng/mL", 0.0, 5000.0, step=0.1, key="CEA_slider", on_change=sync_inputs, args=("CEA_slider", "CEA_num"))
 
 
 # ==========================================
-# 5. 主界面：精确录入矩阵
+# 5. Main Content: Precise Input Matrix
 # ==========================================
-st.markdown("### 👨‍⚕️ 患者临床指标录入面板")
-st.markdown("*(请根据化验单录入数值，系统将实时同步至左侧滑块)*")
+st.markdown("### 👨‍⚕️ Clinical Parameter Input Matrix")
+st.markdown("*(Enter exact values below, or use the sidebar sliders to adjust synchronously)*")
 
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.number_input("Age (月龄)", min_value=200.0, max_value=1300.0, step=1.0, format="%.0f", key="Age_num", on_change=sync_inputs, args=("Age_num", "Age_slider"))
-    st.number_input("Crea (肌酐)", min_value=10.0, max_value=1200.0, step=0.1, format="%.1f", key="Crea_num", on_change=sync_inputs, args=("Crea_num", "Crea_slider"))
+    st.number_input("Age (Months)", min_value=200.0, max_value=1300.0, step=1.0, format="%.0f", key="Age_num", on_change=sync_inputs, args=("Age_num", "Age_slider"))
+    st.number_input("Crea (μmol/L)", min_value=10.0, max_value=1200.0, step=0.1, format="%.1f", key="Crea_num", on_change=sync_inputs, args=("Crea_num", "Crea_slider"))
 with col2:
-    st.number_input("PA (前白蛋白)", min_value=10.0, max_value=800.0, step=1.0, format="%.1f", key="PA_num", on_change=sync_inputs, args=("PA_num", "PA_slider"))
-    st.number_input("GLO (球蛋白)", min_value=10.0, max_value=120.0, step=0.1, format="%.1f", key="GLO_num", on_change=sync_inputs, args=("GLO_num", "GLO_slider"))
+    st.number_input("PA (mg/L)", min_value=10.0, max_value=800.0, step=1.0, format="%.1f", key="PA_num", on_change=sync_inputs, args=("PA_num", "PA_slider"))
+    st.number_input("GLO (g/L)", min_value=10.0, max_value=120.0, step=0.1, format="%.1f", key="GLO_num", on_change=sync_inputs, args=("GLO_num", "GLO_slider"))
 with col3:
-    st.number_input("Lymph% (淋巴%)", min_value=0.0, max_value=100.0, step=0.1, format="%.1f", key="Lymph_pct_num", on_change=sync_inputs, args=("Lymph_pct_num", "Lymph_pct_slider"))
-    st.number_input("Lymph count (淋巴绝对值)", min_value=0.0, max_value=50.0, step=0.01, format="%.2f", key="Lymph_count_num", on_change=sync_inputs, args=("Lymph_count_num", "Lymph_count_slider"))
+    st.number_input("Lymph (%)", min_value=0.0, max_value=100.0, step=0.1, format="%.1f", key="Lymph_pct_num", on_change=sync_inputs, args=("Lymph_pct_num", "Lymph_pct_slider"))
+    st.number_input("Lymph Count", min_value=0.0, max_value=50.0, step=0.01, format="%.2f", key="Lymph_count_num", on_change=sync_inputs, args=("Lymph_count_num", "Lymph_count_slider"))
 with col4:
-    st.number_input("ChE (胆碱酯酶)", min_value=100.0, max_value=25000.0, step=10.0, format="%.0f", key="ChE_num", on_change=sync_inputs, args=("ChE_num", "ChE_slider"))
-    st.number_input("CEA (癌胚抗原)", min_value=0.0, max_value=5000.0, step=0.1, format="%.2f", key="CEA_num", on_change=sync_inputs, args=("CEA_num", "CEA_slider"))
+    st.number_input("ChE (U/L)", min_value=100.0, max_value=25000.0, step=10.0, format="%.0f", key="ChE_num", on_change=sync_inputs, args=("ChE_num", "ChE_slider"))
+    st.number_input("CEA (ng/mL)", min_value=0.0, max_value=5000.0, step=0.1, format="%.2f", key="CEA_num", on_change=sync_inputs, args=("CEA_num", "CEA_slider"))
 
 col5, col6, col7, col8 = st.columns(4)
 with col5:
-    st.number_input("FDP (FDP含量)", min_value=0.0, max_value=300.0, step=0.01, format="%.2f", key="FDP_num", on_change=sync_inputs, args=("FDP_num", "FDP_slider"))
+    st.number_input("FDP (mg/L)", min_value=0.0, max_value=300.0, step=0.01, format="%.2f", key="FDP_num", on_change=sync_inputs, args=("FDP_num", "FDP_slider"))
 
 
-# 构造特征向量
+# Construct Feature DataFrame (Keys must match training data exactly)
 input_df = pd.DataFrame({
     'ChE': [st.session_state["ChE_num"]], 
     'Age': [st.session_state["Age_num"]], 
@@ -198,40 +198,40 @@ input_df = pd.DataFrame({
 })
 
 # ==========================================
-# 6. 核心预测与解释引擎
+# 6. Core Prediction & Explanation Engine
 # ==========================================
-if st.button("🚀 开启 AI 智能预警推演", type="primary"):
-    with st.spinner('🧬 正在运行多维特征解析...'):
+if st.button("🚀 Run AI Risk Assessment", type="primary"):
+    with st.spinner('🧬 Analyzing multi-dimensional clinical features...'):
         
-        # 风险概率预测
+        # Risk probability prediction
         risk_prob = model.predict_proba(input_df)[0][1] 
         
         st.markdown("---")
-        st.markdown("### 🎯 术后风险推断报告")
+        st.markdown("### 🎯 Postoperative Risk Inference Report")
         
         res_col1, res_col2 = st.columns([1, 2])
         
         with res_col1:
-            st.metric(label="术后低蛋白血症概率", value=f"{risk_prob * 100:.2f} %")
+            st.metric(label="Probability of Hypoalbuminemia", value=f"{risk_prob * 100:.2f} %")
             
         with res_col2:
             st.markdown("<br>", unsafe_allow_html=True) 
             if risk_prob > 0.5: 
-                st.error("🚨 **【红色预警】该患者处于高风险区间！** 模型判定该患者极易发生**术后低蛋白血症**。建议加强围手术期营养管理，并考虑术前补充白蛋白及加强术后监测。")
-                st.toast('检测到高危预警！', icon='⚠️') 
+                st.error("🚨 **[HIGH RISK ALERT]** The model identifies this patient as highly susceptible to **postoperative hypoalbuminemia**. Intensive perioperative nutritional management, potential preoperative albumin supplementation, and enhanced postoperative monitoring are strongly recommended.")
+                st.toast('High-risk alert detected!', icon='⚠️') 
             else:
-                st.success("✅ **【安全评估】该患者处于低风险区间。** 暂未检测到显著的低蛋白血症发生倾向，建议维持常规术后营养方案。")
+                st.success("✅ **[SAFE ASSESSMENT]** The patient is currently in the low-risk zone. No significant tendency for postoperative hypoalbuminemia detected. Maintenance of standard postoperative care protocols is recommended.")
                 st.balloons() 
 
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 🧠 风险动因溯源 (SHAP 个体化靶点解析)")
-        st.info("💡 **可视化解读：** 红色条柱代表将风险推高的**危险因子**，蓝色条柱代表**保护因子**。条柱越长，影响权重越大。")
+        st.markdown("### 🧠 Risk Factor Attribution (SHAP Individualized Analysis)")
+        st.info("💡 **Interpretation Guide:** Red bars indicate **risk factors** pushing the prediction higher, while blue bars represent **protective factors** lowering the risk. The length of the bar correlates with the magnitude of its impact on the final decision.")
         
         try:
             explainer = shap.TreeExplainer(model)
             shap_values_raw = explainer.shap_values(input_df)
             
-            # 处理 SHAP 数据格式
+            # Format SHAP data
             if isinstance(shap_values_raw, list):
                 shap_val_single = shap_values_raw[1][0]
             elif len(np.array(shap_values_raw).shape) == 3:
@@ -242,7 +242,7 @@ if st.button("🚀 开启 AI 智能预警推演", type="primary"):
             ev = explainer.expected_value
             base_val = ev[1] if isinstance(ev, (list, np.ndarray)) and len(np.array(ev).flatten()) > 1 else (ev[0] if isinstance(ev, (list, np.ndarray)) else ev)
             
-            # 渲染瀑布图
+            # Render Waterfall Plot
             fig, ax = plt.subplots(figsize=(10, 6))
             exp = shap.Explanation(values=shap_val_single, base_values=base_val, 
                                    data=input_df.iloc[0], feature_names=input_df.columns.tolist())
@@ -251,4 +251,4 @@ if st.button("🚀 开启 AI 智能预警推演", type="primary"):
             plt.close(fig) 
             
         except Exception as e:
-            st.error(f"解析瀑布图时遭遇异常: {e}")
+            st.error(f"An error occurred while generating the SHAP waterfall plot: {e}")
