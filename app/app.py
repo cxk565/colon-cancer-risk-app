@@ -224,8 +224,8 @@ if st.button("🚀 Run AI Risk Assessment", type="primary"):
                 st.balloons() 
 
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 🧠 Risk Factor Attribution (SHAP Individualized Analysis)")
-        st.info("💡 **Interpretation Guide:** Red bars indicate **risk factors** pushing the prediction higher, while blue bars represent **protective factors** lowering the risk. The length of the bar correlates with the magnitude of its impact on the final decision.")
+        st.markdown("### 🧠 Risk Factor Attribution (Multiple Interpretability Views)")
+        st.info("💡 **Interpretation Guide:** Explore different tabs to view the SHAP explanations from multiple perspectives. Red color indicates risk-increasing factors, while blue indicates protective factors.")
         
         try:
             explainer = shap.TreeExplainer(model)
@@ -242,13 +242,41 @@ if st.button("🚀 Run AI Risk Assessment", type="primary"):
             ev = explainer.expected_value
             base_val = ev[1] if isinstance(ev, (list, np.ndarray)) and len(np.array(ev).flatten()) > 1 else (ev[0] if isinstance(ev, (list, np.ndarray)) else ev)
             
-            # Render Waterfall Plot
-            fig, ax = plt.subplots(figsize=(10, 6))
             exp = shap.Explanation(values=shap_val_single, base_values=base_val, 
                                    data=input_df.iloc[0], feature_names=input_df.columns.tolist())
-            shap.waterfall_plot(exp, max_display=10, show=False)
-            st.pyplot(fig)
-            plt.close(fig) 
+            
+            # Create Tabs for multiple SHAP plots
+            tab1, tab2, tab3, tab4 = st.tabs(["🌊 Waterfall Plot", "⚖️ Force Plot", "📈 Decision Plot", "📊 Bar Plot"])
+            
+            with tab1:
+                st.markdown("#### 1. Local Waterfall Plot")
+                st.write("Details how each feature contributes incrementally, starting from the baseline value to reach the final prediction.")
+                fig, ax = plt.subplots(figsize=(10, 6))
+                shap.waterfall_plot(exp, max_display=10, show=False)
+                st.pyplot(fig, bbox_inches='tight')
+                plt.close(fig)
+                
+            with tab2:
+                st.markdown("#### 2. Local Force Plot")
+                st.write("Visualizes the competing forces of clinical features. Red features push the risk higher, while blue features push it lower.")
+                shap.force_plot(base_val, shap_val_single, input_df.iloc[0], matplotlib=True, show=False)
+                st.pyplot(plt.gcf(), bbox_inches='tight')
+                plt.clf()
+                
+            with tab3:
+                st.markdown("#### 3. Decision Plot")
+                st.write("Traces the cumulative effect of features along a decision path, illustrating how the final clinical decision is shaped.")
+                shap.decision_plot(base_val, shap_val_single, input_df.iloc[0], show=False)
+                st.pyplot(plt.gcf(), bbox_inches='tight')
+                plt.clf()
+                
+            with tab4:
+                st.markdown("#### 4. Absolute Impact Bar Plot")
+                st.write("Ranks the patient's individual features strictly by their absolute impact magnitude on the current prediction.")
+                fig, ax = plt.subplots(figsize=(10, 6))
+                shap.plots.bar(exp, max_display=10, show=False)
+                st.pyplot(fig, bbox_inches='tight')
+                plt.close(fig)
             
         except Exception as e:
-            st.error(f"An error occurred while generating the SHAP waterfall plot: {e}")
+            st.error(f"An error occurred while generating the SHAP plots: {e}")
